@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const Login = () => {
@@ -61,7 +61,9 @@ const Login = () => {
             onChange={onChange}
           />
         </div>
-
+        <div className="mb-3">
+          <Link to="/auth/forgot-password">Forgot Password?</Link>
+        </div>
         <button type="submit" className="btn btn-primary">
           Login
         </button>

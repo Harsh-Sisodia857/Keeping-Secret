@@ -87,7 +87,11 @@ module.exports.updateSecrets =async (req, res) => {
         });
     } catch (err) {
         console.error(err.message);
-        return res.status(500).json({ "Internal Server Error": err });
+        return res.status(500).json({
+            "success": false,
+            "error" : err.message,
+            "Internal Server Error": err
+        });
     }
 }
 
@@ -121,7 +125,10 @@ exports.forgotPassword = async (req, res, next) => {
 
         await user.save({ validateBeforeSave: false });
 
-        return res.json({error : err.message});
+        return res.json({
+            "success": false,
+            "error": err.message,
+        });
     }
 }
 
@@ -138,11 +145,17 @@ exports.resetPassword = async (req, res, next) => {
         })
         console.log(user)
     if (!user) {
-        return res.json({ message : "Reset Password Token is Invaid or has been expired"});
+        return res.json({
+            "success": true,
+            message: "Reset Password Token is Invaid or has been expired"
+        });
     }
 
     if (req.body.password !== req.body.confirmPassword) {
-        return res.json({ message : "Password does'nt Match"});
+        return res.json({
+            "success": false,
+            "error": "Password does'nt Match"
+        });
     }
     user.password = req.body.password;
     user.resetPasswordToken = undefined;
