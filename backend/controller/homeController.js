@@ -1,5 +1,8 @@
 const Secret = require('../models/Secret')
-const User = require("../models/User")
+const User = require("../models/User");
+const sendEmail = require('../utils/sendEmail');
+const crypto = require("crypto")
+
 
 module.exports.home = async (req, res) => {
     try {
@@ -86,4 +89,67 @@ module.exports.updateSecrets =async (req, res) => {
         console.error(err.message);
         return res.status(500).json({ "Internal Server Error": err });
     }
+}
+
+// forgot password
+exports.forgotPassword = async (req, res, next) => {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+        return res.status(404).json({ message : "User Not Found"});
+    }
+    const resetToken = user.getResetPasswordToken();
+
+    await user.save({ validateBeforeSave: false });
+
+    const resetPasswordUrl = `http://localhost:5000/user/password/reset/${resetToken}`
+
+    const message = `Your Password Reset Token is : \n\n ${resetPasswordUrl} \n\nIf you have not requested this email then, please ignore it`;
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: `Password Recovery Mail`,
+            message
+        })
+        res.status(200).json({
+            success: true,
+            message: `Email send to ${user.email} successfully`
+        })
+    } catch (err) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+
+        await user.save({ validateBeforeSave: false });
+
+        return res.json({error : err.message});
+    }
+}
+
+// Reset Token
+exports.resetPassword = async (req, res, next) => {
+    // creating token hash as in the database it is saved as hash
+    const resetPasswordToken = crypto
+        .createHash("sha256").
+        update(req.params.token).
+        digest("hex");
+        const user = await User.findOne({
+            resetPasswordToken,
+            resetPasswordExpire: { $gt: Date.now() }
+        })
+        console.log(user)
+    if (!user) {
+        return res.json({ message : "Reset Password Token is Invaid or has been expired"});
+    }
+
+    if (req.body.password !== req.body.confirmPassword) {
+        return res.json({ message : "Password does'nt Match"});
+    }
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+    return res.json({
+        message: "Password Reset Successfully",
+        success : true
+    })
 }
