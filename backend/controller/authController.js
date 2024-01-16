@@ -16,7 +16,10 @@ module.exports.login =async function (req, res) {
     if (!user) {
         return res.status(400).json({ Error: "User does not exists" });
     }
+    console.log(user.password)
+    console.log(password)
     const passwordCompare = await bcrypt.compare(password, user.password);
+    console.log(passwordCompare);
     if (!passwordCompare) {
         success = false;
         return res.status(400).json({success, error: "Please login with correct credentials" });
@@ -36,10 +39,7 @@ module.exports.signup =async function (req, res) {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-
-    const salt = await bcrypt.genSalt(10);
-    const secPass = await bcrypt.hash(req.body.password, salt);
-
+    
     let user = await User.findOne({ email: req.body.email })
     if (user) {
         return res.status(400).json({ error: "User with this email exists",success : false });
@@ -47,7 +47,7 @@ module.exports.signup =async function (req, res) {
     user = await User.create({
         name: req.body.name,
         email: req.body.email,
-        password: secPass,
+        password : req.body.password,
     });
 
     const data = {
